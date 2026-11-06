@@ -1,0 +1,462 @@
+{
+  "schema_version": 1,
+  "shots": [
+    {
+      "slug": "home-empty-state",
+      "page": "index.md",
+      "step": "Open the app",
+      "status": "ready",
+      "caption": "The empty workspace: one prompt, a status strip, and nothing else to learn first.",
+      "intent": "Show that the prompt is the whole interface. No sidebar, no forms.",
+      "actions": []
+    },
+    {
+      "slug": "first-prompt-typed",
+      "page": "01-first-thought.md",
+      "step": "Type a prompt",
+      "status": "stub",
+      "caption": "A typed prompt and the mode Nexus suggests for it.",
+      "intent": "Show the live mode suggestion and the send button relabelling.",
+      "try": "type 'What if the central assumption were reversed?'",
+      "actions": []
+    },
+    {
+      "slug": "first-reply",
+      "page": "01-first-thought.md",
+      "step": "Read the reply",
+      "status": "ready",
+      "caption": "The reply appears in a transcript, labelled with the model and mode that produced it.",
+      "intent": "Show the DEMO label and the reply action buttons.",
+      "actions": [
+        {
+          "do": "ask",
+          "text": "What if the central assumption were reversed?"
+        }
+      ]
+    },
+    {
+      "slug": "follow-up-same-thread",
+      "page": "01-first-thought.md",
+      "step": "Keep going in the same thread",
+      "status": "stub",
+      "caption": "A second prompt continues the same conversation.",
+      "intent": "Show two exchanges in one thread and that the composer reset.",
+      "try": "ask twice; the second prompt should be different in kind, such as 'Resume the scene'",
+      "actions": []
+    },
+    {
+      "slug": "mode-continue-detected",
+      "page": "02-modes-and-widgets.md",
+      "step": "Continue is suggested",
+      "status": "ready",
+      "caption": "Typing a 'resume' style prompt switches the pane to the continue controls.",
+      "intent": "Show Resume from, Next step and Continuity appearing without any click.",
+      "actions": [
+        {
+          "do": "type",
+          "text": "Resume the scene after the argument"
+        },
+        {
+          "do": "select",
+          "label": "Resume from",
+          "option": "Chapter 5"
+        }
+      ],
+      "seed": {
+        "documents": [
+          {
+            "type": "chapter",
+            "title": "Chapter 5",
+            "body": "The hall fell silent. The envoy waited by the door."
+          }
+        ]
+      },
+      "highlight": "#contextTitle"
+    },
+    {
+      "slug": "mode-draft-widgets",
+      "page": "02-modes-and-widgets.md",
+      "step": "New chapter controls",
+      "status": "stub",
+      "caption": "New chapter shows point of view, tone and scope.",
+      "intent": "Show a different mode giving different controls.",
+      "try": "type 'Write chapter 4 about the harbor'",
+      "actions": []
+    },
+    {
+      "slug": "mode-research-widgets",
+      "page": "02-modes-and-widgets.md",
+      "step": "Research controls and the honesty note",
+      "status": "stub",
+      "caption": "Research mode says plainly that there is no live web search.",
+      "intent": "Show the no-web-access note, the safeguard from DESIGN.md.",
+      "try": "type 'Research the historical accuracy of the debate'",
+      "actions": []
+    },
+    {
+      "slug": "mode-override-pill",
+      "page": "02-modes-and-widgets.md",
+      "step": "Override the suggestion",
+      "status": "stub",
+      "caption": "Clicking a mode pill overrides the guess; click it again to undo.",
+      "intent": "Show Selected: versus Suggested: wording and the pressed pill.",
+      "try": "type 'What if she refuses?'; click the Character pill",
+      "actions": []
+    },
+    {
+      "slug": "widget-values-changed",
+      "page": "02-modes-and-widgets.md",
+      "step": "Change a control",
+      "status": "stub",
+      "caption": "Changing a control changes the request that is sent.",
+      "intent": "Show non-default selections that will be sent with the prompt.",
+      "try": "type 'Write chapter 4 about the harbor'; select Tone, Point of view and Scope",
+      "actions": []
+    },
+    {
+      "slug": "slash-menu-open",
+      "page": "03-commands.md",
+      "step": "Press the slash key",
+      "status": "ready",
+      "caption": "Typing a slash lists every command.",
+      "intent": "Show all eight commands in the suggestion menu.",
+      "actions": [
+        {
+          "do": "type",
+          "text": "/"
+        }
+      ],
+      "highlight": "#cmdMenu"
+    },
+    {
+      "slug": "slash-menu-doc-subcommands",
+      "page": "03-commands.md",
+      "step": "Narrow it down",
+      "status": "stub",
+      "caption": "After /doc the menu offers new, open and list.",
+      "intent": "Show subcommand suggestions with their hints.",
+      "try": "type '/doc '",
+      "actions": []
+    },
+    {
+      "slug": "slash-typo-suggestion",
+      "page": "03-commands.md",
+      "step": "Typos are caught",
+      "status": "stub",
+      "caption": "A misspelled command offers a 'Did you mean' fix.",
+      "intent": "Show the safety net for typos.",
+      "try": "type '/projct'",
+      "actions": []
+    },
+    {
+      "slug": "help-toast",
+      "page": "03-commands.md",
+      "step": "Ask for help",
+      "status": "stub",
+      "caption": "/help lists the commands in a short message.",
+      "intent": "Show the toast after /help.",
+      "try": "run '/help'",
+      "actions": []
+    },
+    {
+      "slug": "unknown-command-refused",
+      "page": "03-commands.md",
+      "step": "Unknown commands are refused",
+      "status": "stub",
+      "caption": "An unknown command is refused locally instead of being sent to a model.",
+      "intent": "Show that a slash typo never becomes a chat prompt.",
+      "try": "run '/frobnicate the plot'",
+      "actions": []
+    },
+    {
+      "slug": "project-new",
+      "page": "04-projects.md",
+      "step": "Create a project",
+      "status": "stub",
+      "caption": "/project new creates a project and switches to it.",
+      "intent": "Show the status strip changing to the new name.",
+      "try": "run '/project new Atlas'",
+      "actions": []
+    },
+    {
+      "slug": "project-switch-suggestions",
+      "page": "04-projects.md",
+      "step": "Switch between projects",
+      "status": "stub",
+      "caption": "The menu lists your projects while you type /project switch.",
+      "intent": "Show project names offered as suggestions.",
+      "try": "seed extra_projects; type '/project switch '",
+      "actions": []
+    },
+    {
+      "slug": "project-rename",
+      "page": "04-projects.md",
+      "step": "Rename the current project",
+      "status": "stub",
+      "caption": "/project rename changes the name shown in the status strip.",
+      "intent": "Show the rename result.",
+      "try": "run '/project rename Renamed'",
+      "actions": []
+    },
+    {
+      "slug": "project-delete-warning",
+      "page": "04-projects.md",
+      "step": "Deleting is deliberate",
+      "status": "stub",
+      "caption": "The pane warns what will be removed and shows the exact command to confirm.",
+      "intent": "Show the permanence warning with real counts.",
+      "try": "seed a document and a conversation; type '/project delete'",
+      "actions": []
+    },
+    {
+      "slug": "project-delete-done",
+      "page": "04-projects.md",
+      "step": "After a deletion",
+      "status": "stub",
+      "caption": "The project and everything in it is gone, and you land in another project.",
+      "intent": "Show the confirmation message and the surviving project.",
+      "try": "seed extra_projects ['Scratch']; run '/project switch Scratch' then '/project delete Scratch'",
+      "actions": []
+    },
+    {
+      "slug": "model-pane",
+      "page": "05-models.md",
+      "step": "See your models",
+      "status": "stub",
+      "caption": "/model lists every provider and marks the one in use.",
+      "intent": "Show configured versus not configured providers.",
+      "try": "type '/model '",
+      "actions": []
+    },
+    {
+      "slug": "model-unconfigured-refused",
+      "page": "05-models.md",
+      "step": "An unconfigured model is refused",
+      "status": "stub",
+      "caption": "Choosing a model the server has not configured explains what to do.",
+      "intent": "Show the refusal text and that the model did not change.",
+      "try": "run '/model bedrock'",
+      "actions": []
+    },
+    {
+      "slug": "model-demo-placeholder",
+      "page": "05-models.md",
+      "step": "Demo replies are placeholders",
+      "status": "stub",
+      "caption": "Demo mode labels every reply so it is never mistaken for model output.",
+      "intent": "Show the [DEMO RESPONSE] banner in a reply.",
+      "try": "ask 'Explore a thing'",
+      "actions": []
+    },
+    {
+      "slug": "doc-new-dialog",
+      "page": "06-documents-and-context.md",
+      "step": "Create a document",
+      "status": "stub",
+      "caption": "/doc new opens an empty document dialog.",
+      "intent": "Show the dialog with type, title and content.",
+      "try": "run '/doc new character Maya Okafor'",
+      "actions": []
+    },
+    {
+      "slug": "doc-saved-count",
+      "page": "06-documents-and-context.md",
+      "step": "The count updates",
+      "status": "stub",
+      "caption": "After saving, the status strip shows the new document count.",
+      "intent": "Show 1 document in the strip.",
+      "try": "run '/doc new note Scratch idea'; type body; click Save document",
+      "actions": []
+    },
+    {
+      "slug": "resume-picker",
+      "page": "06-documents-and-context.md",
+      "step": "Pick a chapter to resume",
+      "status": "stub",
+      "caption": "The continue controls list your chapters so the model sees the real text.",
+      "intent": "Show the Resume from dropdown with seeded chapters.",
+      "try": "seed two chapters; type 'Resume the scene'; open the dropdown by selecting one",
+      "actions": []
+    },
+    {
+      "slug": "related-material-card",
+      "page": "06-documents-and-context.md",
+      "step": "Suggested related material",
+      "status": "stub",
+      "caption": "Related notes appear as opt-in checkboxes.",
+      "intent": "Show an unchecked, then checked, related card.",
+      "try": "seed a note about a lighthouse; type 'Explore the lighthouse keeper'; tick the box",
+      "actions": []
+    },
+    {
+      "slug": "doc-open-edit",
+      "page": "06-documents-and-context.md",
+      "step": "Open a document to edit it",
+      "status": "stub",
+      "caption": "/doc open reopens a saved document for editing.",
+      "intent": "Show the edit dialog with the type locked.",
+      "try": "seed a chapter; run '/doc open chapter 5'",
+      "actions": []
+    },
+    {
+      "slug": "reply-actions",
+      "page": "07-save-and-append.md",
+      "step": "Choose what to do with a reply",
+      "status": "stub",
+      "caption": "Each reply offers the save actions that fit its mode.",
+      "intent": "Show the buttons under a reply, including Append to chapter.",
+      "try": "seed a chapter; ask 'Write chapter 4 about the harbor'",
+      "actions": []
+    },
+    {
+      "slug": "save-as-note-review",
+      "page": "07-save-and-append.md",
+      "step": "Review before saving",
+      "status": "stub",
+      "caption": "Saving opens an editable review. Nothing is stored yet.",
+      "intent": "Show the dialog pre-filled with the reply.",
+      "try": "ask 'Explore a thing'; click Save as note",
+      "actions": []
+    },
+    {
+      "slug": "append-review",
+      "page": "07-save-and-append.md",
+      "step": "Review an append",
+      "status": "stub",
+      "caption": "The dialog shows the chapter with the reply added and says to review before saving.",
+      "intent": "Show the 'Review before saving' status text.",
+      "try": "seed a chapter; ask 'Resume the scene'; click Append to chapter",
+      "actions": []
+    },
+    {
+      "slug": "append-saved",
+      "page": "07-save-and-append.md",
+      "step": "Save the append",
+      "status": "stub",
+      "caption": "After saving, the chapter contains the addition and the conversation stays archived.",
+      "intent": "Show the Document saved message.",
+      "try": "continue from append-review; click Save document",
+      "actions": []
+    },
+    {
+      "slug": "golden-path-research-switch",
+      "page": "07-save-and-append.md",
+      "step": "Switch to research mid-thread",
+      "status": "stub",
+      "caption": "The next prompt in the same thread changes mode to Research.",
+      "intent": "Show the golden path ending in a mode change without leaving the thread.",
+      "try": "after an append, type 'Research historical analogues to the monarchy response'",
+      "actions": []
+    },
+    {
+      "slug": "search-dialog-results",
+      "page": "08-search-and-export.md",
+      "step": "Search the archive",
+      "status": "stub",
+      "caption": "Ctrl+K opens search across documents and conversations.",
+      "intent": "Show results grouped by type.",
+      "try": "seed two documents; search 'lighthouse'",
+      "actions": []
+    },
+    {
+      "slug": "search-pane-preview",
+      "page": "08-search-and-export.md",
+      "step": "Preview from the prompt",
+      "status": "stub",
+      "caption": "/search shows results in the side pane while you type.",
+      "intent": "Show the preview without opening the dialog.",
+      "try": "seed a note; type '/search salt'",
+      "actions": []
+    },
+    {
+      "slug": "export-command",
+      "page": "08-search-and-export.md",
+      "step": "Export a project",
+      "status": "stub",
+      "caption": "/export downloads the project as JSON.",
+      "intent": "Show the export confirmation message.",
+      "try": "run '/export'",
+      "actions": []
+    },
+    {
+      "slug": "failure-prompt-kept",
+      "page": "09-when-things-go-wrong.md",
+      "step": "A model failure keeps your words",
+      "status": "stub",
+      "caption": "The failure message appears, your prompt is still in the box, and no fake reply was added.",
+      "intent": "Show the safeguard: errors never become assistant messages.",
+      "try": "env arc_down; run '/model arc'; send 'A lost scene that must not vanish'",
+      "actions": [],
+      "env": {
+        "arc_down": true
+      }
+    },
+    {
+      "slug": "title-required",
+      "page": "09-when-things-go-wrong.md",
+      "step": "A title is required",
+      "status": "stub",
+      "caption": "Saving without a title is refused and the dialog stays open.",
+      "intent": "Show the validation message.",
+      "try": "run '/doc new'; type body; click Save document",
+      "actions": []
+    },
+    {
+      "slug": "busy-while-waiting",
+      "page": "09-when-things-go-wrong.md",
+      "step": "Sending is one request at a time",
+      "status": "ready",
+      "caption": "While a request runs the button says Thinking and is disabled.",
+      "intent": "Show the busy state.",
+      "actions": [
+        {
+          "do": "type",
+          "text": "Explore a thing"
+        },
+        {
+          "do": "send_no_wait"
+        },
+        {
+          "do": "wait_visible",
+          "selector": "#sendBtn[aria-busy=true]"
+        }
+      ],
+      "highlight": "#sendBtn",
+      "hold_chat": true
+    },
+    {
+      "slug": "keyboard-menu-navigation",
+      "page": "10-keyboard-and-accessibility.md",
+      "step": "Move through suggestions",
+      "status": "stub",
+      "caption": "Arrow keys move the highlighted suggestion; Tab accepts it.",
+      "intent": "Show the active option and the focus ring.",
+      "try": "type '/'; press ArrowDown",
+      "actions": []
+    },
+    {
+      "slug": "phone-layout",
+      "page": "10-keyboard-and-accessibility.md",
+      "step": "On a phone",
+      "status": "stub",
+      "caption": "At phone width the pane stacks below the prompt.",
+      "intent": "Show that every control stays reachable on a narrow screen.",
+      "try": "viewport 390 by 800; type 'Resume the scene'",
+      "actions": [],
+      "viewport": {
+        "width": 390,
+        "height": 800
+      }
+    },
+    {
+      "slug": "focus-ring",
+      "page": "10-keyboard-and-accessibility.md",
+      "step": "A visible focus ring",
+      "status": "stub",
+      "caption": "Focused controls have a clear outline.",
+      "intent": "Show keyboard focus on the prompt.",
+      "try": "no actions; click into the prompt",
+      "actions": []
+    }
+  ]
+}
