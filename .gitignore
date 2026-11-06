@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.sqlite3
+*.sqlite3-*
+.env
+.ai-sec/reports/
+test-results/
+.venv-security/
+
+# Editor and local-only artifacts
+.idea/
+*.zip
+preview-*.png
+nexus.sqlite3

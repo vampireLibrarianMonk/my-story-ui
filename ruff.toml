@@ -1,0 +1,2 @@
+# Match the lowest Python the project supports so auto-fixes cannot use newer-only APIs.
+target-version = "py310"
