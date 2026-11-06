@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prompt Nexus — from thought to world</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head><body>
+<div class="app-shell">
+ <header class="topbar">
+   <div class="brand" id="homeBrand" role="button" tabindex="0"><span class="brand-symbol">✳</span><span>nexus<span class="brand-period">.</span></span><small>STORY STUDIO</small></div>
+ </header>
+ <div class="layout">
+  <main class="main" id="mainArea">
+    <div id="hero" class="hero">
+     <div class="hero-eyebrow"><span class="mini-star">✦</span> AN OPEN SPACE FOR IDEAS</div>
+     <h1>Every world starts<br>with <em>a thought.</em></h1>
+     <p class="hero-sub">Start with a sentence. Nexus brings the right writing and research tools into focus around it.</p>
+    </div>
+    <section class="conversation" id="conversation" aria-label="Conversation" hidden>
+      <div class="conversation-header"><div><div class="conversation-kicker">CURRENT THREAD</div><h2 id="threadTitle">Untitled conversation</h2></div><button class="subtle-btn" id="newThreadInChat">＋ New thought</button></div>
+      <div class="messages" id="messages" aria-live="polite"></div>
+    </section>
+    <section class="composer-zone" id="composerZone">
+      <nav class="status-strip" id="statusStrip" aria-label="Workspace status">
+        <button type="button" class="chip" id="chipProject" title="Manage projects (/project)"><span aria-hidden="true">❖</span><span id="projectName">—</span></button>
+        <button type="button" class="chip" id="chipModel" title="Choose a model (/model)"><span aria-hidden="true">◉</span><span id="modelName">—</span></button>
+        <button type="button" class="chip" id="chipDocs" title="List documents (/doc list)"><span id="docCount">0</span> <span id="docWord">documents</span></button>
+        <button type="button" class="chip" id="chipChats" title="List conversations (/chat list)"><span id="chatCount">0</span> <span id="chatWord">conversations</span></button>
+      </nav>
+      <div class="composer-card">
+        <div class="prompt-topline"><span class="prompt-label">YOUR PROMPT</span><span class="prompt-right"><span class="spark">✦</span> THE NEXUS</span></div>
+        <div class="cmd-menu" id="cmdMenu" role="listbox" aria-label="Command suggestions" hidden></div>
+        <textarea id="promptInput" rows="3" placeholder="What if the central assumption were reversed...?" aria-label="Write a prompt. Type a slash for commands." role="combobox" aria-expanded="false" aria-controls="cmdMenu" aria-autocomplete="list" aria-haspopup="listbox"></textarea>
+        <div class="composer-bottom">
+          <div class="mode-status"><span class="mode-pulse"></span><span id="modeStatusText">Explore · detects your intent as you type</span></div>
+          <button id="sendBtn" class="send-btn" type="button">Explore <span>↗</span></button>
+        </div>
+      </div>
+      <div class="mode-pills" id="modePills" aria-label="Writing activities">
+        <button data-mode="draft"><span>✎</span> New chapter</button>
+        <button data-mode="continue"><span>↻</span> Continue</button>
+        <button data-mode="character"><span>♙</span> Character</button>
+        <button data-mode="world"><span>◈</span> Worldbuilding</button>
+        <button data-mode="research"><span>⌕</span> Research</button>
+        <button data-mode="explore"><span>✦</span> Explore</button>
+      </div>
+      <div class="privacy-tip"><span>↳</span> Your conversation is saved locally. Nothing becomes canon automatically. Type / for commands.</div>
+    </section>
+    <section id="openProject" class="empty-project">
+      <div class="empty-project-label">A workspace that grows with you</div>
+      <div class="example-prompts"><button data-example="Start a new chapter that opens with a character arriving somewhere unfamiliar.">✎ <span>Begin a chapter</span><span>↗</span></button><button data-example="Explore the groups that would oppose a major change to how this society works.">◈ <span>Shape the world</span><span>↗</span></button><button data-example="Research historical precedents for how institutions respond to challenges to their authority.">⌕ <span>Investigate an idea</span><span>↗</span></button></div>
+    </section>
+  </main>
+  <aside class="context-pane" id="contextPane" aria-label="Contextual tools">
+    <div class="context-header"><div class="section-eyebrow">ADAPTS TO YOUR PROMPT</div><div class="context-title-row"><h2 id="contextTitle">Context, when needed.</h2><span class="context-glyph">✳</span></div><p id="contextDescription">Begin typing and the most useful writing controls will appear here.</p></div>
+    <div id="activeWidgets" class="widget-stack empty-widgets"><div class="context-placeholder"><div class="placeholder-icon">⌘</div><strong>Start with an idea</strong><p>Chapter controls, character details, research options, and relevant notes will surface here.</p></div></div>
+    <div class="context-related" id="contextRelated" hidden><div class="panel-heading"><span>RELATED MATERIAL</span><span id="relatedCount">0</span></div><div id="relatedItems"></div></div>
+    <div class="context-footer" id="contextFooter">You choose what the model sees.</div>
+  </aside>
+ </div>
+</div>
+<div class="modal-backdrop" id="documentModal" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="docModalTitle"><div class="modal-head"><div><div class="section-eyebrow">PROJECT MATERIAL</div><h2 id="docModalTitle">New document</h2></div><button class="icon-btn" id="closeDoc" aria-label="Close">×</button></div><div class="modal-fields"><label>Type<select id="docType"><option value="chapter">Chapter</option><option value="character">Character</option><option value="world">Worldbuilding</option><option value="research">Research</option><option value="note">Note / excerpt</option></select></label><label>Title<input id="docTitle" type="text" maxlength="160" placeholder="Give this a name"></label><label>Content<textarea id="docBody" rows="14" placeholder="Your text, notes, ideas, or approved passages..."></textarea></label></div><div class="modal-actions"><span id="docSaveStatus">Saved in this project</span><button id="saveDoc" class="send-btn">Save document ↗</button></div></div></div>
+<div class="modal-backdrop" id="searchModal" hidden><div class="search-modal" role="dialog" aria-modal="true" aria-labelledby="searchTitle"><h2 id="searchTitle" class="sr-only">Search archive</h2><div class="search-row"><span>⌕</span><input id="archiveSearch" type="search" placeholder="Search conversations, chapters, notes..." aria-label="Search archive"><button class="icon-btn" id="closeSearch">×</button></div><div id="searchResults" class="search-results"><div class="search-hint">Search your project's stored text—not the internet.</div></div></div></div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="/static/app.js" defer></script>
+</body></html>
