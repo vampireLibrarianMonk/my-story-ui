@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "execution": "disabled-by-default: documentation only, NOT imported or executed by security_gate.py",
+  "providers": {
+    "snyk": {
+      "enabled": false,
+      "areas": ["SAST", "SCA", "IaC", "container"],
+      "commands_after_approval": ["snyk code test", "snyk test", "snyk iac test", "snyk container test IMAGE"],
+      "credential_env": ["SNYK_TOKEN"],
+      "todo": "Choose org/region, network/privacy policy, severity gates and authorized CI secret before enabling."
+    },
+    "github_advanced_security": {
+      "enabled": false,
+      "areas": ["code scanning/CodeQL", "secret protection", "dependency review"],
+      "todo": "Enable by GitHub repository/org administration and install official CI actions with SHA-pinned revisions; do not assume entitlement."
+    },
+    "sonarqube_server_or_cloud": {
+      "enabled": false,
+      "areas": ["code quality", "security hotspots", "SAST"],
+      "credential_env": ["SONAR_TOKEN", "SONAR_HOST_URL"],
+      "todo": "Use a dedicated Sonar scanner job and enforce Quality Gate results; account/server and plugin capabilities vary."
+    },
+    "wiz": {
+      "enabled": false,
+      "areas": ["cloud posture", "container", "code-to-cloud"],
+      "todo": "Use an approved Wiz CLI/CI integration from vendor docs. No guessed CLI flags or credentials embedded."
+    },
+    "prisma_cloud": {
+      "enabled": false,
+      "areas": ["IaC", "container image", "cloud workload"],
+      "todo": "Connect approved Prisma Cloud CI scanner/registry integration; exact CLI flags and license-dependent features must be validated."
+    },
+    "mend": {
+      "enabled": false,
+      "areas": ["open-source dependencies", "licenses", "SCA"],
+      "todo": "Use official Mend pipeline integration once account policy and entitlement are known."
+    }
+  }
+}

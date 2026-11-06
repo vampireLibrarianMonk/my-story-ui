@@ -1,0 +1,3 @@
+# Scanners live in their own venv (.venv-security) so their pins cannot conflict with the app.
+semgrep==1.184.0
+bandit==1.9.4

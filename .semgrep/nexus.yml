@@ -1,0 +1,92 @@
+rules:
+  - id: nexus-js-innerhtml-dynamic
+    languages: [javascript]
+    severity: ERROR
+    message: >
+      innerHTML/outerHTML assigned from a non-literal. Model replies, document text and project names are
+      untrusted. Use textContent or createElement.
+    patterns:
+      - pattern-either:
+          - pattern: $X.innerHTML = $V
+          - pattern: $X.outerHTML = $V
+          - pattern: $X.insertAdjacentHTML($P, $V)
+      - pattern-not: $X.innerHTML = "..."
+      - pattern-not: $X.innerHTML = '...'
+      - pattern-not: $X.innerHTML = `...`
+    paths:
+      include: ["app/static/*.js"]
+
+  - id: nexus-js-code-eval
+    languages: [javascript]
+    severity: ERROR
+    message: "eval, new Function and string timers execute text as code."
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+      - pattern: setTimeout("...", ...)
+    paths:
+      include: ["app/static/*.js"]
+
+  - id: nexus-py-sql-built-from-string
+    languages: [python]
+    severity: ERROR
+    message: "SQL built with f-string, concatenation, % or .format. Use ? placeholders with a params tuple."
+    patterns:
+      - pattern-either:
+          - pattern: $CON.execute(f"...", ...)
+          - pattern: $CON.execute($A + $B, ...)
+          - pattern: $CON.execute("..." % $X, ...)
+          - pattern: $CON.execute("...".format(...), ...)
+          - pattern: all_rows(f"...", ...)
+          - pattern: one(f"...", ...)
+    paths:
+      include: ["app/*.py"]
+
+  - id: nexus-py-httpx-redirects-enabled
+    languages: [python]
+    severity: WARNING
+    message: >
+      Provider calls must not follow redirects (SSRF and credential forwarding). ARC_CHAT_URL is
+      operator-supplied, but a redirect could still carry the bearer token elsewhere.
+    patterns:
+      - pattern: httpx.AsyncClient(..., follow_redirects=True, ...)
+    paths:
+      include: ["app/*.py"]
+
+  - id: nexus-py-provider-call-without-timeout
+    languages: [python]
+    severity: WARNING
+    message: "Outbound HTTP to a model provider needs an explicit timeout."
+    patterns:
+      - pattern: httpx.AsyncClient(...)
+      - pattern-not: httpx.AsyncClient(..., timeout=..., ...)
+    paths:
+      include: ["app/providers.py"]
+
+  - id: nexus-py-secret-env-in-response-or-log
+    languages: [python]
+    severity: ERROR
+    message: "Provider credentials must never be returned to the browser or logged."
+    pattern-either:
+      - pattern: 'return {..., $K: os.environ["ARC_API_KEY"], ...}'
+      - pattern: print(..., os.environ.get("ARC_API_KEY"), ...)
+      - pattern: logging.$F(..., os.environ.get("ARC_API_KEY"), ...)
+    paths:
+      include: ["app/*.py"]
+
+  - id: nexus-py-destructive-sql-outside-storage
+    languages: [python]
+    severity: ERROR
+    message: "Deletes belong in storage.py behind the guarded API, not in route handlers."
+    patterns:
+      - pattern-regex: (?i)execute\(\s*["']\s*(DELETE|DROP|TRUNCATE)\b
+    paths:
+      include: ["app/main.py"]
+
+  - id: nexus-py-bind-all-interfaces
+    languages: [generic]
+    severity: ERROR
+    message: "The app has no authentication. Bind to 127.0.0.1 only."
+    pattern-regex: (?i)(--host[ =]+0\.0\.0\.0|host\s*=\s*["']0\.0\.0\.0["'])
+    paths:
+      exclude: ["tests/*", ".semgrep/*"]

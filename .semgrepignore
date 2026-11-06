@@ -1,0 +1,7 @@
+.venv/
+.venv-security/
+.git/
+node_modules/
+*.zip
+*.png
+.ai-sec/reports/

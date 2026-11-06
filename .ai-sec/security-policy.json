@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "scanners": {
+    "gitleaks": {
+      "enabled": true,
+      "required": true
+    },
+    "semgrep": {
+      "enabled": true,
+      "required": true
+    },
+    "osv": {
+      "enabled": true,
+      "required": true
+    },
+    "checkov": {
+      "enabled": false,
+      "required": true
+    },
+    "trivy_fs": {
+      "enabled": true,
+      "required": true
+    },
+    "trivy_image": {
+      "enabled": false,
+      "required": true
+    },
+    "syft_sbom": {
+      "enabled": false,
+      "required": true
+    },
+    "bandit": {
+      "enabled": true,
+      "required": true
+    },
+    "grype_dir": {
+      "enabled": true,
+      "required": true
+    },
+    "grype_image": {
+      "enabled": false,
+      "required": true
+    }
+  },
+  "policy_note": "Enabled checks fail closed if tools are unavailable. Disable only with documented justification; enable IaC and image scanners when applicable."
+}

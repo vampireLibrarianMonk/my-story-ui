@@ -1,0 +1,2 @@
+# Bandit: scan application and tooling code. Tests legitimately use assert.
+exclude_dirs: [tests, .venv, .venv-security, .git]

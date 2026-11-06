@@ -1,0 +1,10 @@
+# Project gitleaks config: default rules plus a narrow path allowlist for tool environments.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Third-party environments and VCS internals; project source is still scanned"
+paths = [
+  '''(^|/)\.venv(-security)?/''',
+  '''(^|/)\.git/''',
+]
