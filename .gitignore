@@ -14,3 +14,11 @@ test-results/
 *.zip
 preview-*.png
 nexus.sqlite3
+
+# Author input documents (private corpus) and their archive
+dropbox/*
+!dropbox/.gitkeep
+dropbox_archive/
+
+# Kiro CLI session transcripts (large, local only)
+.kiro/
