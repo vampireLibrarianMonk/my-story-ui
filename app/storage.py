@@ -46,6 +46,59 @@ def setup(db_path: str | None = None) -> None:
                 "INSERT INTO projects(id,name) VALUES (?,?)",
                 (new_id(), "My first project"),
             )
+    _migrate()
+
+
+def _columns(con, table: str) -> set[str]:
+    return {row["name"] for row in con.execute(f"PRAGMA table_info({table})")}
+
+
+def _migrate() -> None:
+    """Idempotent, additive migrations. Safe to run on every startup; never drops data.
+
+    tags:     comma-free JSON array of lowercase strings, for allocation and filtering.
+    metadata: JSON object for status/provenance/canon labels the corpus requires
+              (e.g. {"status": "MIXED", "source_confidence": "AUTHOR-STATED", "canon": false}).
+    """
+    with connect() as con:
+        cols = _columns(con, "documents")
+        if "tags" not in cols:
+            con.execute(
+                "ALTER TABLE documents ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'"
+            )
+        if "metadata" not in cols:
+            con.execute(
+                "ALTER TABLE documents ADD COLUMN metadata TEXT NOT NULL DEFAULT '{}'"
+            )
+        # Tag lookup table keeps filtering fast and avoids LIKE scans over the JSON blob.
+        con.executescript("""
+        CREATE TABLE IF NOT EXISTS document_tags (
+            document_id TEXT NOT NULL REFERENCES documents(id),
+            tag TEXT NOT NULL,
+            PRIMARY KEY (document_id, tag)
+        );
+        CREATE INDEX IF NOT EXISTS tag_by_name ON document_tags(tag, document_id);
+        """)
+
+
+def normalize_tags(tags) -> list[str]:
+    """Lowercase, trimmed, de-duplicated, order-preserving. Rejects empties and overlong tags."""
+    seen: dict[str, None] = {}
+    for t in tags or []:
+        if not isinstance(t, str):
+            continue
+        key = t.strip().lower()
+        if key and len(key) <= 60:
+            seen.setdefault(key, None)
+    return list(seen)
+
+
+def _sync_tags(con, did: str, tags: list[str]) -> None:
+    con.execute("DELETE FROM document_tags WHERE document_id=?", (did,))
+    con.executemany(
+        "INSERT OR IGNORE INTO document_tags(document_id, tag) VALUES (?, ?)",
+        [(did, t) for t in tags],
+    )
 
 
 def new_id() -> str:
@@ -101,30 +154,96 @@ def delete_project(pid: str) -> dict:
         ]
         for cid in convo_ids:
             con.execute("DELETE FROM messages WHERE conversation_id=?", (cid,))
+        con.execute(
+            "DELETE FROM document_tags WHERE document_id IN (SELECT id FROM documents WHERE project_id=?)",
+            (pid,),
+        )
         docs = con.execute("DELETE FROM documents WHERE project_id=?", (pid,)).rowcount
         con.execute("DELETE FROM conversations WHERE project_id=?", (pid,))
         con.execute("DELETE FROM projects WHERE id=?", (pid,))
     return {"documents": docs, "conversations": len(convo_ids)}
 
 
-def create_document(pid: str, doc_type: str, title: str, body: str):
+def create_document(
+    pid: str,
+    doc_type: str,
+    title: str,
+    body: str,
+    tags: list[str] | None = None,
+    metadata: dict | None = None,
+):
     did = new_id()
+    tag_list = normalize_tags(tags)
     with connect() as con:
         con.execute(
-            "INSERT INTO documents(id,project_id,type,title,body) VALUES (?,?,?,?,?)",
-            (did, pid, doc_type, title, body),
+            "INSERT INTO documents(id,project_id,type,title,body,tags,metadata) VALUES (?,?,?,?,?,?,?)",
+            (
+                did,
+                pid,
+                doc_type,
+                title,
+                body,
+                json.dumps(tag_list),
+                json.dumps(metadata or {}),
+            ),
         )
+        _sync_tags(con, did, tag_list)
     return one("SELECT * FROM documents WHERE id=?", (did,))
 
 
-def update_document(did: str, title: str | None, body: str | None):
+def update_document(
+    did: str,
+    title: str | None,
+    body: str | None,
+    tags: list[str] | None = None,
+    metadata: dict | None = None,
+):
     with connect() as con:
         con.execute(
             """UPDATE documents SET title=COALESCE(?,title), body=COALESCE(?,body),
             updated_at=CURRENT_TIMESTAMP WHERE id=?""",
             (title, body, did),
         )
+        if tags is not None:
+            tag_list = normalize_tags(tags)
+            con.execute(
+                "UPDATE documents SET tags=? WHERE id=?", (json.dumps(tag_list), did)
+            )
+            _sync_tags(con, did, tag_list)
+        if metadata is not None:
+            con.execute(
+                "UPDATE documents SET metadata=? WHERE id=?",
+                (json.dumps(metadata), did),
+            )
     return one("SELECT * FROM documents WHERE id=?", (did,))
+
+
+def documents_by_tags(pid: str, tags: list[str], match: str = "any", limit: int = 100):
+    """Documents in a project carrying the given tags. match='any' (union) or 'all' (intersection)."""
+    wanted = normalize_tags(tags)
+    if not wanted:
+        return []
+    placeholders = ",".join("?" for _ in wanted)
+    having = "" if match == "any" else f"HAVING COUNT(DISTINCT dt.tag) = {len(wanted)}"
+    return all_rows(
+        f"""SELECT d.id, d.project_id, d.type, d.title, substr(d.body,1,160) AS excerpt,
+                   d.tags, d.metadata, d.updated_at
+            FROM documents d JOIN document_tags dt ON dt.document_id = d.id
+            WHERE d.project_id=? AND dt.tag IN ({placeholders})
+            GROUP BY d.id {having}
+            ORDER BY d.updated_at DESC LIMIT ?""",
+        (pid, *wanted, limit),
+    )
+
+
+def project_tags(pid: str):
+    """Every tag used in a project with its document count, most-used first (for allocation UIs)."""
+    return all_rows(
+        """SELECT dt.tag AS tag, COUNT(*) AS count
+           FROM document_tags dt JOIN documents d ON d.id = dt.document_id
+           WHERE d.project_id=? GROUP BY dt.tag ORDER BY count DESC, tag ASC""",
+        (pid,),
+    )
 
 
 def create_conversation(pid: str, title: str):
