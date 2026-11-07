@@ -147,6 +147,7 @@ def test_doc_open_edits_an_existing_document(nx, api, make_doc):
     expect(nx.doc_dialog).to_be_visible()
     expect(nx.doc_title).to_have_value("Chapter 5")
     expect(nx.doc_type).to_be_disabled()
+    nx.edit_document()
     expect(nx.doc_body).to_have_value("Original text.")
     nx.doc_body.fill("Edited text.")
     nx.save_document()

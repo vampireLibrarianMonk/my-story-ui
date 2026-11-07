@@ -86,7 +86,7 @@ def project_overview(project_id: str):
     require_project(project_id)
     return {
         "documents": store.all_rows(
-            "SELECT id,project_id,type,title,substr(body,1,160) AS excerpt,updated_at FROM documents WHERE project_id=? ORDER BY updated_at DESC",
+            "SELECT id,project_id,type,title,substr(body,1,160) AS excerpt,tags,metadata,updated_at FROM documents WHERE project_id=? ORDER BY updated_at DESC",
             (project_id,),
         ),
         "conversations": store.all_rows(

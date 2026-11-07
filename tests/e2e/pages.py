@@ -152,6 +152,15 @@ class NexusPage:
     def save_document(self) -> None:
         self.doc_dialog.get_by_role("button", name="Save document").click()
 
+    def edit_document(self) -> None:
+        """Existing documents open rendered; switch to the editable textarea deterministically."""
+        from playwright.sync_api import expect
+
+        btn = self.doc_dialog.get_by_role("button", name="Edit")
+        expect(btn).to_be_visible()  # wait out the async open before deciding
+        btn.click()
+        self.doc_body.wait_for(state="visible")
+
     # ---- search dialog
     @property
     def search_dialog(self) -> Locator:

@@ -32,7 +32,12 @@
     const flushPara = () => {
       if (!para.length) return;
       const p = document.createElement('p');
-      inline(p, para.join(' ').trim());
+      // Each source line within a paragraph becomes its own visual line (soft break), so label
+      // lines like "Role: ...\nStatus: ...\nVersion: ..." read as separate lines, matching author intent.
+      para.forEach((lineText, idx) => {
+        if (idx > 0) p.appendChild(document.createElement('br'));
+        inline(p, lineText.trim());
+      });
       root.appendChild(p);
       para = [];
     };
