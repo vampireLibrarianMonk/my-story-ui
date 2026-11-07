@@ -142,3 +142,57 @@ def test_header_lines_render_on_separate_lines(nx, api, pid):
     nx.run("/doc open Header")
     para = nx.page.locator("#docPreview .markdown p").first
     expect(para.locator("br")).to_have_count(2)
+
+
+def test_relationships_render_grouped_by_scale(nx, api, pid):
+    # Two characters linked at two scales, one directed.
+    a = api.post(
+        "/api/documents",
+        json={"project_id": pid, "type": "character", "title": "Alpha", "body": "x"},
+    ).json()["id"]
+    b = api.post(
+        "/api/documents",
+        json={"project_id": pid, "type": "character", "title": "Beta", "body": "x"},
+    ).json()["id"]
+    api.post(
+        "/api/relationships",
+        json={
+            "project_id": pid,
+            "from_doc": a,
+            "to_doc": b,
+            "scale": "personal",
+            "nature": "ally",
+        },
+    )
+    api.post(
+        "/api/relationships",
+        json={
+            "project_id": pid,
+            "from_doc": a,
+            "to_doc": b,
+            "scale": "organizational",
+            "nature": "authority",
+            "direction": "from_to",
+            "status": "decided",
+        },
+    )
+    nx.reload()
+    nx.run("/doc open Alpha")
+    section = nx.page.locator("#docRelationships")
+    expect(section).to_be_visible()
+    expect(nx.page.locator("#relCount")).to_have_text("2")
+    expect(nx.page.locator(".rel-scale")).to_have_count(2)
+    rows = nx.page.locator(".rel-row")
+    expect(rows).to_have_count(2)
+    expect(rows.filter(has_text="Beta").first).to_be_visible()
+
+
+def test_document_without_relationships_hides_the_section(nx, api, pid):
+    api.post(
+        "/api/documents",
+        json={"project_id": pid, "type": "note", "title": "Lonely", "body": "x"},
+    )
+    nx.reload()
+    nx.run("/doc open Lonely")
+    expect(nx.doc_dialog).to_be_visible()
+    expect(nx.page.locator("#docRelationships")).to_be_hidden()

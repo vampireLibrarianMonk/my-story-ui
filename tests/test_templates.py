@@ -78,3 +78,41 @@ def test_deleting_a_project_removes_its_templates(client):
         ).status_code
         == 200
     )
+
+
+def test_two_example_characters_are_seeded(client):
+    pid = client.get("/api/bootstrap").json()["projects"][0]["id"]
+    titles = [d["title"] for d in docs(client, pid)]
+    assert "Example character - The Insider" in titles
+    assert "Example character - The Outsider" in titles
+
+
+def test_examples_are_linked_across_every_scale(client):
+    pid = client.get("/api/bootstrap").json()["projects"][0]["id"]
+    rels = client.get(f"/api/projects/{pid}/relationships").json()["relationships"]
+    scales = {r["scale"] for r in rels}
+    assert {"personal", "organizational", "societal", "ideological", "group"}.issubset(
+        scales
+    )
+    # the personal tie is a mutual ally bond; the organizational tie is directed authority
+    by_scale = {r["scale"]: r for r in rels}
+    assert (
+        by_scale["personal"]["nature"] == "ally"
+        and by_scale["personal"]["direction"] == "mutual"
+    )
+    assert (
+        by_scale["organizational"]["nature"] == "authority"
+        and by_scale["organizational"]["direction"] == "from_to"
+    )
+
+
+def test_example_seeding_is_idempotent(client):
+    pid = client.get("/api/bootstrap").json()["projects"][0]["id"]
+    before = len(
+        client.get(f"/api/projects/{pid}/relationships").json()["relationships"]
+    )
+    storage.seed_reference_docs(pid)
+    after = len(
+        client.get(f"/api/projects/{pid}/relationships").json()["relationships"]
+    )
+    assert before == after == 5

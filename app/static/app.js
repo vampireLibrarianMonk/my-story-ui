@@ -584,6 +584,39 @@ function showDocImage(id, meta){
   }
 }
 function metaOf(doc){try{return doc&&doc.metadata?JSON.parse(doc.metadata):{}}catch{return {}}}
+const SCALE_LABELS={personal:'Personal',group:'Group',organizational:'Organizational',societal:'Societal',ideological:'Ideological'};
+function docTitle(id){const d=state.docs.find(x=>x.id===id);return d?d.title:'(unknown document)'}
+async function showRelationships(id){
+  const section=$('docRelationships'); const list=$('relList');
+  if(!id){section.hidden=true;return}
+  try{
+    const res=await api(`/api/documents/${id}/relationships`);
+    const rels=res.relationships||[];
+    $('relCount').textContent=rels.length;
+    section.hidden=rels.length===0;
+    clear(list);
+    // group by scale for a readable, level-first view
+    const byScale={};
+    for(const r of rels)(byScale[r.scale]=byScale[r.scale]||[]).push(r);
+    for(const scale of Object.keys(SCALE_LABELS)){
+      const group=byScale[scale]; if(!group)continue;
+      const h=document.createElement('div');h.className='rel-scale';h.textContent=SCALE_LABELS[scale];list.append(h);
+      for(const r of group){
+        const other = r.from_doc===id ? r.to_doc : r.from_doc;
+        const outgoing = r.from_doc===id;
+        const arrow = r.direction==='from_to' ? (outgoing?'→':'←') : '↔';
+        const row=document.createElement('div');row.className='rel-row'+(r.status==='decided'?' decided':'');
+        const nat=document.createElement('span');nat.className='rel-nature';nat.textContent=r.nature;
+        const ar=document.createElement('span');ar.className='rel-arrow';ar.textContent=arrow;
+        const who=document.createElement('span');who.className='rel-who';who.textContent=docTitle(other);
+        const st=document.createElement('span');st.className='rel-status';st.textContent=r.status;
+        row.append(nat,ar,who,st);
+        if(r.note){row.title=r.note}
+        list.append(row);
+      }
+    }
+  }catch(e){section.hidden=true;console.warn(e)}
+}
 function openImageLightbox(id){
   $('imageFull').src=docImageUrl(id);
   $('imageModal').hidden=false;
@@ -632,6 +665,7 @@ function openDoc(id=null,seed=null){
   const existing=Boolean(d);
   $('docToggleView').hidden=!existing;
   showDocImage(existing?id:null, metaOf(d));
+  showRelationships(existing?id:null);
   const show=()=>setDocView(existing?'preview':'edit');
   if(d){
     if(seed && Object.prototype.hasOwnProperty.call(seed,'body')){$('docBody').value=seed.body;show()}

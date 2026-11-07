@@ -76,3 +76,13 @@ button.command-line{display:block;width:100%;text-align:left;color:var(--ink)}
 .image-lightbox img{max-width:88vw;max-height:80vh;object-fit:contain;border-radius:8px}
 .image-caption{font-size:12px;color:var(--text-soft);text-align:center}
 .image-close{position:absolute;top:-14px;right:-14px;background:#fff;border:1px solid var(--line);border-radius:50%}
+
+/* Relationships panel in the document dialog, grouped by scale */
+.doc-relationships{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.rel-scale{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text-soft);margin:10px 0 4px}
+.rel-row{display:flex;gap:8px;align-items:baseline;padding:5px 8px;border:1px solid var(--line);border-radius:8px;margin:3px 0;font-size:13px}
+.rel-row.decided{border-color:#9ad1ad}
+.rel-nature{font-weight:700;color:var(--text-accent);text-transform:capitalize}
+.rel-arrow{color:var(--text-soft)}
+.rel-who{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.rel-status{font-size:11px;color:var(--text-soft);text-transform:uppercase;letter-spacing:.4px}

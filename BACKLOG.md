@@ -7,6 +7,8 @@ work lands, the marker is removed. Run `pytest -q -rx` to list them.
 Status key: `[ ]` todo · `[~]` in progress · `[x]` done (kept briefly for context)
 
 ## Done recently
+- [x] Character-profile reference template seeded into every project.
+- [x] Normalized relationships (standalone edges, five scales, directed ties); two contrasting example characters linked across every scale; relationships rendered in the document view.
 - [x] Prompt-first UI: slash commands, autocomplete, status strip replacing the sidebar.
 - [x] Real-browser e2e suite + axe WCAG 2.1 AA across every state; `planned`/`known_bug` stubs.
 - [x] Security: pre-commit (Ruff, hygiene, Gitleaks) + independent gate (Gitleaks, Semgrep, Bandit, Trivy, Grype, OSV).
@@ -38,6 +40,8 @@ Status key: `[ ]` todo · `[~]` in progress · `[x]` done (kept briefly for cont
 - [ ] Tags in the frontend: a tag field in the document dialog; `/doc list #tag` filtering.
 - [ ] Surface status/provenance/canon in the document view; guard canon promotion server-side.
 - [ ] Conflict-link edge items so two drafts of a fact stay linked without being merged.
+- [ ] Relationship editing UI (add/edit/delete ties from the character view; filter by scale).
+- [ ] Relationship records map to DynamoDB edge items (REL#<from>#<to>#<scale>) per docs/STORAGE.md.
 
 ## Known bugs (each has a strict xfail test)
 - [ ] Duplicate project names accepted — `test_duplicate_project_names_are_rejected`.
