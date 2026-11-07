@@ -3,6 +3,7 @@ __pycache__/
 .pytest_cache/
 *.pyc
 *.sqlite3
+nexus_images/
 *.sqlite3-*
 .env
 .ai-sec/reports/
