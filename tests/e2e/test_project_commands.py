@@ -79,11 +79,16 @@ def test_switch_refuses_ambiguous_and_unknown_names(nx, api):
     api.post("/api/projects", json={"name": "Atlas One"})
     api.post("/api/projects", json={"name": "Atlas Two"})
     nx.reload()
+    # Which project boot selects is not deterministic when several share a creation second
+    # (see test_reload_keeps_the_active_project). Assert the switch is refused and nothing changed,
+    # not that a specific project is active.
+    active = nx.project_chip.inner_text()
     nx.run("/project switch atlas")
     expect(nx.toast).to_contain_text('No single project matches "atlas"')
-    expect(nx.project_chip).to_have_text("My first project")
+    expect(nx.project_chip).to_have_text(active)
     nx.run("/project switch zebra")
     expect(nx.toast).to_contain_text("No single project matches")
+    expect(nx.project_chip).to_have_text(active)
 
 
 def test_rename_phrasing(nx):
