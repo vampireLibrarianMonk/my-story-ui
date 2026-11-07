@@ -13,6 +13,7 @@ from app.main import app
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("NEXUS_DB", str(tmp_path / "test.sqlite3"))
+    monkeypatch.setenv("NEXUS_NO_SEED", "1")
     monkeypatch.delenv("ARC_CHAT_URL", raising=False)
     monkeypatch.delenv("ARC_MODEL_ID", raising=False)
     monkeypatch.delenv("BEDROCK_MODEL_ID", raising=False)

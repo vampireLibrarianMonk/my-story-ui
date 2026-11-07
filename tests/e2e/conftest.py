@@ -35,6 +35,9 @@ def run_server(tmp_path, extra_env=None):
         if not k.startswith(("ARC_", "BEDROCK_", "AWS_"))
     }
     env["NEXUS_DB"] = str(tmp_path / "e2e.sqlite3")
+    # The command/document e2e tests assert on otherwise-empty projects; template seeding is
+    # covered separately in tests/test_templates.py.
+    env["NEXUS_NO_SEED"] = "1"
     env.update(extra_env or {})
     proc = subprocess.Popen(
         [

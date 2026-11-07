@@ -47,6 +47,9 @@ def setup(db_path: str | None = None) -> None:
                 (new_id(), "My first project"),
             )
     _migrate()
+    # Ensure every project has the reference templates (covers the first-run project and upgrades).
+    for p in all_rows("SELECT id FROM projects"):
+        seed_reference_docs(p["id"])
 
 
 def _columns(con, table: str) -> set[str]:
@@ -130,10 +133,52 @@ def one(sql: str, params=()):
     return dict(result) if result else None
 
 
+TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+# Reference documents seeded into every project so the app can advise, not just store.
+# metadata.template marks them so the UI can treat them as guidance (e.g. a distinct icon).
+REFERENCE_DOCS = [
+    {
+        "type": "character",
+        "title": "Character profile - how to fill this in",
+        "file": "character_profile.md",
+        "tags": ["reference", "template", "character"],
+    },
+]
+
+
+def seed_reference_docs(pid: str) -> int:
+    """Create the reference/template documents in a project. Idempotent per title; returns count created.
+
+    Set NEXUS_NO_SEED=1 to skip (used by tests that assert on an otherwise-empty project).
+    """
+    if os.environ.get("NEXUS_NO_SEED"):
+        return 0
+    created = 0
+    for spec in REFERENCE_DOCS:
+        exists = one(
+            "SELECT id FROM documents WHERE project_id=? AND title=?",
+            (pid, spec["title"]),
+        )
+        if exists:
+            continue
+        body = (TEMPLATES_DIR / spec["file"]).read_text(encoding="utf-8")
+        create_document(
+            pid,
+            spec["type"],
+            spec["title"],
+            body,
+            tags=spec["tags"],
+            metadata={"template": True, "canon": False, "status": "REFERENCE"},
+        )
+        created += 1
+    return created
+
+
 def create_project(name: str):
     pid = new_id()
     with connect() as con:
         con.execute("INSERT INTO projects(id,name) VALUES (?,?)", (pid, name))
+    seed_reference_docs(pid)
     return one("SELECT * FROM projects WHERE id=?", (pid,))
 
 

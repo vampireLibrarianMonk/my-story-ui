@@ -105,7 +105,8 @@ def test_project_tag_counts(client):
         t["tag"]: t["count"]
         for t in client.get(f"/api/projects/{pid}/tags").json()["tags"]
     }
-    assert tags == {"hero": 2, "allies": 1}
+    # The project also carries the seeded reference template's tags; assert only the ones we added.
+    assert tags["hero"] == 2 and tags["allies"] == 1
 
 
 def test_tags_are_scoped_to_their_project(client):
@@ -126,12 +127,14 @@ def test_tags_are_scoped_to_their_project(client):
 def test_deleting_a_project_removes_its_tag_rows(client):
     project(client)
     p2 = client.post("/api/projects", json={"name": "Scratch"}).json()["id"]
-    make(client, p2, "A", ["hero", "allies"])
+    doc = make(client, p2, "A", ["hero", "allies"])
     client.delete(f"/api/projects/{p2}", params={"confirm_name": "Scratch"})
     with storage.connect() as con:
-        assert (
-            con.execute("SELECT COUNT(*) AS n FROM document_tags").fetchone()["n"] == 0
-        )
+        # No tag rows should remain for any document that belonged to the deleted project.
+        leftover = con.execute(
+            "SELECT COUNT(*) AS n FROM document_tags WHERE document_id=?", (doc["id"],)
+        ).fetchone()["n"]
+    assert leftover == 0
 
 
 def test_existing_documents_without_tags_still_work(client):
