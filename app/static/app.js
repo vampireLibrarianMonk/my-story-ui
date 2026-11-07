@@ -567,6 +567,60 @@ async function sendPrompt(){
     toast(e.message);
   }finally{setBusy(false);$('sendBtn').disabled=false;applyMode(true)}
 }
+function docImageUrl(id){return `/api/documents/${id}/image?t=${Date.now()}`}
+function showDocImage(id, meta){
+  // The image row only applies to a saved document; it needs an id to attach to.
+  const row=$('docImageRow');
+  if(!id){row.hidden=true;return}
+  row.hidden=false;
+  const thumb=$('docImageThumb'), remove=$('docImageRemove');
+  const has=Boolean(meta&&meta.image);
+  clear(thumb);
+  if(has){
+    const img=document.createElement('img');img.src=docImageUrl(id);img.alt='Reference image thumbnail';
+    thumb.append(img);thumb.hidden=false;remove.hidden=false;
+  }else{
+    thumb.hidden=true;remove.hidden=true;
+  }
+}
+function metaOf(doc){try{return doc&&doc.metadata?JSON.parse(doc.metadata):{}}catch{return {}}}
+function openImageLightbox(id){
+  $('imageFull').src=docImageUrl(id);
+  $('imageModal').hidden=false;
+}
+async function uploadDocImage(file){
+  if(!state.editingDoc){toast('Save the document first, then add an image.');return}
+  if(file.size>8*1024*1024){toast('Image exceeds the 8 MB limit.');return}
+  try{
+    const res=await fetch(`/api/documents/${state.editingDoc}/image`,{method:'PUT',
+      headers:{'Content-Type':file.type},body:file});
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||`Upload failed (${res.status})`)}
+    const updated=await res.json();
+    const i=state.docs.findIndex(d=>d.id===updated.id);if(i>=0)state.docs[i]=updated;else await loadOverview();
+    showDocImage(updated.id, metaOf(updated));renderStatus();toast('Reference image added.');
+  }catch(e){toast(e.message)}
+}
+async function removeDocImage(){
+  if(!state.editingDoc)return;
+  try{
+    const updated=await api(`/api/documents/${state.editingDoc}/image`,{method:'DELETE'});
+    const i=state.docs.findIndex(d=>d.id===updated.id);if(i>=0)state.docs[i]=updated;
+    showDocImage(updated.id, metaOf(updated));toast('Reference image removed.');
+  }catch(e){toast(e.message)}
+}
+function setDocView(mode){
+  // mode: 'edit' shows the textarea; 'preview' renders the markdown read-only.
+  state.docView=mode;
+  const editing=mode==='edit';
+  $('docBody').hidden=!editing;
+  const prev=$('docPreview');prev.hidden=editing;
+  if(!editing){
+    clear(prev);
+    prev.append(renderMarkdown($('docBody').value));
+  }
+  const btn=$('docToggleView');btn.textContent=editing?'Preview':'Edit';
+  btn.setAttribute('aria-pressed',String(!editing));
+}
 function openDoc(id=null,seed=null){
   state.editingDoc=id;
   const d=state.docs.find(d=>d.id===id);
@@ -574,10 +628,15 @@ function openDoc(id=null,seed=null){
   $('docType').value=d?.type||seed?.type||'note';$('docType').disabled=Boolean(d);
   $('docTitle').value=d?.title||seed?.title||'';$('docBody').value='';
   $('documentModal').hidden=false;
+  // New documents open in edit mode; existing ones open rendered, with an Edit toggle.
+  const existing=Boolean(d);
+  $('docToggleView').hidden=!existing;
+  showDocImage(existing?id:null, metaOf(d));
+  const show=()=>setDocView(existing?'preview':'edit');
   if(d){
-    if(seed && Object.prototype.hasOwnProperty.call(seed,'body')) $('docBody').value=seed.body;
-    else api('/api/documents/'+id).then(full=>{$('docBody').value=full.body}).catch(e=>toast(e.message));
-  }else $('docBody').value=seed?.body||'';
+    if(seed && Object.prototype.hasOwnProperty.call(seed,'body')){$('docBody').value=seed.body;show()}
+    else api('/api/documents/'+id).then(full=>{$('docBody').value=full.body;showDocImage(id,metaOf(full));show()}).catch(e=>toast(e.message));
+  }else{$('docBody').value=seed?.body||'';show()}
   setTimeout(()=>$('docTitle').focus(),50);
 }
 async function saveDoc(){
@@ -737,11 +796,18 @@ function bind(){
   $('chipDocs').onclick=()=>fillPrompt('/doc list');
   $('chipChats').onclick=()=>fillPrompt('/chat list');
   $('closeDoc').onclick=()=>$('documentModal').hidden=true;$('saveDoc').onclick=saveDoc;
+  $('docToggleView').onclick=()=>setDocView(state.docView==='edit'?'preview':'edit');
+  $('docImageUpload').onclick=()=>$('docImageFile').click();
+  $('docImageFile').onchange=e=>{const f=e.target.files[0];if(f)uploadDocImage(f);e.target.value=''};
+  $('docImageRemove').onclick=removeDocImage;
+  $('docImageThumb').onclick=()=>{if(state.editingDoc)openImageLightbox(state.editingDoc)};
+  $('closeImage').onclick=()=>$('imageModal').hidden=true;
+  $('imageModal').onclick=e=>{if(e.target===$('imageModal'))$('imageModal').hidden=true};
   $('closeSearch').onclick=()=>$('searchModal').hidden=true;
   $('archiveSearch').oninput=searchArchive;
   for(const modal of [$('documentModal'),$('searchModal')])modal.onclick=e=>{if(e.target===modal)modal.hidden=true};
   document.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){$('documentModal').hidden=true;$('searchModal').hidden=true}
+    if(e.key==='Escape'){$('imageModal').hidden=true;$('documentModal').hidden=true;$('searchModal').hidden=true}
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openSearch()}
     if(e.key.toLowerCase()==='n'&&!(e.target instanceof HTMLInputElement)&&!(e.target instanceof HTMLTextAreaElement)&&!(e.target instanceof HTMLSelectElement)&&!(e.ctrlKey||e.metaKey)){newThread()}
   });
