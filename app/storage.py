@@ -82,6 +82,27 @@ def _migrate() -> None:
         );
         CREATE INDEX IF NOT EXISTS tag_by_name ON document_tags(tag, document_id);
         """)
+        # Relationships are standalone, normalized edges between two documents (one row per tie).
+        # "A and B are personal allies but organizational rivals" is two rows. Directed ties
+        # (authority, mentor) use direction='from_to'; symmetric ties use 'mutual'.
+        con.executescript("""
+        CREATE TABLE IF NOT EXISTS relationships (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL REFERENCES projects(id),
+            from_doc TEXT NOT NULL REFERENCES documents(id),
+            to_doc TEXT NOT NULL REFERENCES documents(id),
+            scale TEXT NOT NULL,
+            nature TEXT NOT NULL,
+            direction TEXT NOT NULL DEFAULT 'mutual',
+            status TEXT NOT NULL DEFAULT 'proposed',
+            note TEXT NOT NULL DEFAULT '',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS rel_by_project ON relationships(project_id, scale);
+        CREATE INDEX IF NOT EXISTS rel_by_from ON relationships(from_doc);
+        CREATE INDEX IF NOT EXISTS rel_by_to ON relationships(to_doc);
+        """)
 
 
 def normalize_tags(tags) -> list[str]:
@@ -133,6 +154,84 @@ def one(sql: str, params=()):
     return dict(result) if result else None
 
 
+# --- Relationships: standalone, normalized edges between two documents. ---
+# Controlled vocabularies keep the data normalized and queryable; validation happens at the API layer.
+RELATIONSHIP_SCALES = ("personal", "group", "organizational", "societal", "ideological")
+RELATIONSHIP_NATURES = (
+    "ally",
+    "rival",
+    "kin",
+    "authority",
+    "mentor",
+    "romance",
+    "debt",
+    "suspicion",
+    "allegiance",
+)
+RELATIONSHIP_DIRECTIONS = ("mutual", "from_to")
+RELATIONSHIP_STATUSES = ("decided", "proposed", "open")
+
+
+def create_relationship(
+    pid: str,
+    from_doc: str,
+    to_doc: str,
+    scale: str,
+    nature: str,
+    direction: str = "mutual",
+    status: str = "proposed",
+    note: str = "",
+) -> dict:
+    rid = new_id()
+    with connect() as con:
+        con.execute(
+            """INSERT INTO relationships
+               (id,project_id,from_doc,to_doc,scale,nature,direction,status,note)
+               VALUES (?,?,?,?,?,?,?,?,?)""",
+            (rid, pid, from_doc, to_doc, scale, nature, direction, status, note),
+        )
+    return one("SELECT * FROM relationships WHERE id=?", (rid,))
+
+
+def update_relationship(rid: str, fields: dict) -> dict:
+    allowed = {"scale", "nature", "direction", "status", "note"}
+    sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    if sets:
+        cols = ", ".join(f"{k}=?" for k in sets)
+        with connect() as con:
+            con.execute(
+                f"UPDATE relationships SET {cols}, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (*sets.values(), rid),
+            )
+    return one("SELECT * FROM relationships WHERE id=?", (rid,))
+
+
+def delete_relationship(rid: str) -> None:
+    with connect() as con:
+        con.execute("DELETE FROM relationships WHERE id=?", (rid,))
+
+
+def relationships_for_document(did: str):
+    """Every tie touching a document, from either end, newest first."""
+    return all_rows(
+        "SELECT * FROM relationships WHERE from_doc=? OR to_doc=? ORDER BY updated_at DESC",
+        (did, did),
+    )
+
+
+def project_relationships(pid: str, scale: str | None = None):
+    """All ties in a project, optionally filtered to one scale."""
+    if scale:
+        return all_rows(
+            "SELECT * FROM relationships WHERE project_id=? AND scale=? ORDER BY updated_at DESC",
+            (pid, scale),
+        )
+    return all_rows(
+        "SELECT * FROM relationships WHERE project_id=? ORDER BY updated_at DESC",
+        (pid,),
+    )
+
+
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 # Reference documents seeded into every project so the app can advise, not just store.
 # metadata.template marks them so the UI can treat them as guidance (e.g. a distinct icon).
@@ -143,6 +242,53 @@ REFERENCE_DOCS = [
         "file": "character_profile.md",
         "tags": ["reference", "template", "character"],
     },
+    {
+        "type": "character",
+        "title": "Example character - The Insider",
+        "file": "example_insider.md",
+        "tags": ["reference", "example", "character"],
+    },
+    {
+        "type": "character",
+        "title": "Example character - The Outsider",
+        "file": "example_outsider.md",
+        "tags": ["reference", "example", "character"],
+    },
+]
+
+# Reciprocal ties between the two example characters, one per scale, to exercise the relationship model.
+# from=Insider, to=Outsider. Directed ties read "Insider -> Outsider".
+EXAMPLE_RELATIONSHIPS = [
+    (
+        "personal",
+        "ally",
+        "mutual",
+        "A personal bond that survives their institutional divide.",
+    ),
+    (
+        "organizational",
+        "authority",
+        "from_to",
+        "The Insider holds rank the Outsider rejects; organizationally above.",
+    ),
+    (
+        "societal",
+        "rival",
+        "mutual",
+        "Their peoples or classes stand on opposite sides.",
+    ),
+    (
+        "ideological",
+        "rival",
+        "mutual",
+        "Order-from-within versus freedom-from-without; opposed convictions.",
+    ),
+    (
+        "group",
+        "debt",
+        "from_to",
+        "The Insider owes the Outsider's circle an unpaid favor.",
+    ),
 ]
 
 
@@ -154,23 +300,46 @@ def seed_reference_docs(pid: str) -> int:
     if os.environ.get("NEXUS_NO_SEED"):
         return 0
     created = 0
+    titles = {}
     for spec in REFERENCE_DOCS:
         exists = one(
             "SELECT id FROM documents WHERE project_id=? AND title=?",
             (pid, spec["title"]),
         )
         if exists:
+            titles[spec["title"]] = exists["id"]
             continue
         body = (TEMPLATES_DIR / spec["file"]).read_text(encoding="utf-8")
-        create_document(
+        doc = create_document(
             pid,
             spec["type"],
             spec["title"],
             body,
             tags=spec["tags"],
-            metadata={"template": True, "canon": False, "status": "REFERENCE"},
+            metadata={
+                "template": spec["file"] == "character_profile.md",
+                "example": "example" in spec["tags"],
+                "canon": False,
+                "status": "REFERENCE",
+            },
         )
+        titles[spec["title"]] = doc["id"]
         created += 1
+    # Seed the example relationships once, only when both example docs exist and none are present yet.
+    insider = titles.get("Example character - The Insider")
+    outsider = titles.get("Example character - The Outsider")
+    if (
+        insider
+        and outsider
+        and not one(
+            "SELECT id FROM relationships WHERE from_doc=? AND to_doc=?",
+            (insider, outsider),
+        )
+    ):
+        for scale, nature, direction, note in EXAMPLE_RELATIONSHIPS:
+            create_relationship(
+                pid, insider, outsider, scale, nature, direction, "proposed", note
+            )
     return created
 
 
@@ -203,6 +372,7 @@ def delete_project(pid: str) -> dict:
             "DELETE FROM document_tags WHERE document_id IN (SELECT id FROM documents WHERE project_id=?)",
             (pid,),
         )
+        con.execute("DELETE FROM relationships WHERE project_id=?", (pid,))
         docs = con.execute("DELETE FROM documents WHERE project_id=?", (pid,)).rowcount
         con.execute("DELETE FROM conversations WHERE project_id=?", (pid,))
         con.execute("DELETE FROM projects WHERE id=?", (pid,))

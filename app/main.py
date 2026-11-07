@@ -186,6 +186,97 @@ def remove_document_image(document_id: str):
     return store.delete_document_image(document_id)
 
 
+class RelationshipInput(BaseModel):
+    project_id: str
+    from_doc: str
+    to_doc: str
+    scale: Literal["personal", "group", "organizational", "societal", "ideological"]
+    nature: Literal[
+        "ally",
+        "rival",
+        "kin",
+        "authority",
+        "mentor",
+        "romance",
+        "debt",
+        "suspicion",
+        "allegiance",
+    ]
+    direction: Literal["mutual", "from_to"] = "mutual"
+    status: Literal["decided", "proposed", "open"] = "proposed"
+    note: str = Field(default="", max_length=2000)
+
+
+class RelationshipUpdate(BaseModel):
+    scale: str | None = None
+    nature: str | None = None
+    direction: str | None = None
+    status: str | None = None
+    note: str | None = Field(default=None, max_length=2000)
+
+
+def require_relationship(rid):
+    r = store.one("SELECT * FROM relationships WHERE id=?", (rid,))
+    if not r:
+        raise HTTPException(404, "Relationship not found.")
+    return r
+
+
+@app.post("/api/relationships", status_code=201)
+def new_relationship(payload: RelationshipInput):
+    require_project(payload.project_id)
+    if payload.from_doc == payload.to_doc:
+        raise HTTPException(400, "A relationship needs two different documents.")
+    for did in (payload.from_doc, payload.to_doc):
+        d = require_document(did)
+        if d["project_id"] != payload.project_id:
+            raise HTTPException(400, "Both documents must belong to the project.")
+    return store.create_relationship(
+        payload.project_id,
+        payload.from_doc,
+        payload.to_doc,
+        payload.scale,
+        payload.nature,
+        payload.direction,
+        payload.status,
+        payload.note,
+    )
+
+
+@app.patch("/api/relationships/{relationship_id}")
+def patch_relationship(relationship_id: str, payload: RelationshipUpdate):
+    require_relationship(relationship_id)
+    fields = payload.model_dump(exclude_none=True)
+    for key, allowed in (
+        ("scale", store.RELATIONSHIP_SCALES),
+        ("nature", store.RELATIONSHIP_NATURES),
+        ("direction", store.RELATIONSHIP_DIRECTIONS),
+        ("status", store.RELATIONSHIP_STATUSES),
+    ):
+        if key in fields and fields[key] not in allowed:
+            raise HTTPException(422, f"Invalid {key}: {fields[key]}.")
+    return store.update_relationship(relationship_id, fields)
+
+
+@app.delete("/api/relationships/{relationship_id}")
+def remove_relationship(relationship_id: str):
+    require_relationship(relationship_id)
+    store.delete_relationship(relationship_id)
+    return {"deleted": relationship_id}
+
+
+@app.get("/api/projects/{project_id}/relationships")
+def list_relationships(project_id: str, scale: str = Query(default="")):
+    require_project(project_id)
+    return {"relationships": store.project_relationships(project_id, scale or None)}
+
+
+@app.get("/api/documents/{document_id}/relationships")
+def document_relationships(document_id: str):
+    require_document(document_id)
+    return {"relationships": store.relationships_for_document(document_id)}
+
+
 @app.get("/api/projects/{project_id}/context")
 def context(project_id: str, q: str = "", limit: int = 6):
     require_project(project_id)
