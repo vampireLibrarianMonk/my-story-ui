@@ -1,0 +1,14 @@
+{
+  "note": "Copy to dropbox/eval_tasks.json and fill with your own prompts. 'context' keys map to dropbox/*.md via corpus.available_documents(). Story content stays out of the repository.",
+  "tasks": [
+    {"id": "character_profile", "mode": "character",
+     "prompt": "Write a working character profile for <NAME> at <STAGE>. Mark anything uncertain as uncertain.",
+     "options": {"focus": "Biography", "format": "Profile notes"}, "context": []},
+    {"id": "worldbuilding", "mode": "world",
+     "prompt": "Develop <INSTITUTION> and its open questions. Keep allegation and proven fact separate.",
+     "options": {"domain": "Religion", "lens": "Test internal consistency"}, "context": []},
+    {"id": "research", "mode": "research",
+     "prompt": "Research <TOPIC>, distinguishing what is known from what is inferred.",
+     "options": {"method": "Establish what is known", "rigor": "Challenge all unsupported claims"}, "context": []}
+  ]
+}

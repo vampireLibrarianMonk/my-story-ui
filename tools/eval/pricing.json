@@ -1,0 +1,7 @@
+{
+  "note": "USD per 1000 tokens, us-east-1, author-supplied/estimated. Update before trusting cost figures; unknown models are measured in tokens only.",
+  "amazon.nova-micro-v1:0": {"input": 0.000035, "output": 0.00014},
+  "amazon.nova-lite-v1:0": {"input": 0.00006, "output": 0.00024},
+  "amazon.nova-pro-v1:0": {"input": 0.0008, "output": 0.0032},
+  "mistral.mistral-large-3-675b-instruct": {"input": 0.002, "output": 0.006}
+}

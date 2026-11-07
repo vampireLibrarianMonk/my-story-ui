@@ -1,0 +1,13 @@
+{
+  "note": "Copy to a private location (e.g. dropbox/canon_rules.json) and set CANON_RULES. These rules encode YOUR story's hard constraints; keep them out of the repository.",
+  "forbid": [
+    {"id": "example-open-trait", "severity": "block",
+     "pattern": "\\b(blonde|blue-eyed)\\b",
+     "message": "Asserts a physical trait the author left OPEN."}
+  ],
+  "require_counts": [
+    {"id": "example-count", "when_any": ["\\bguards?\\b"], "needs": "\\b(12|twelve)\\b",
+     "message": "Mentions guards but not the fixed count of 12."}
+  ],
+  "hedge_pattern": "\\b(unknown|unconfirmed|proposed)\\b"
+}
