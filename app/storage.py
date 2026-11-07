@@ -246,6 +246,70 @@ def project_tags(pid: str):
     )
 
 
+# --- Document images: bytes live on disk beside the database, referenced from metadata. ---
+# This is the local-first backend. The storage plan (docs/STORAGE.md) swaps this for S3 behind the
+# same two functions without touching the API.
+
+IMAGE_TYPES = {
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/webp": "webp",
+    "image/gif": "gif",
+}
+MAX_IMAGE_BYTES = 8 * 1024 * 1024
+
+
+def _images_dir() -> Path:
+    d = Path(DB_PATH).resolve().parent / "nexus_images"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def save_document_image(did: str, data: bytes, content_type: str) -> dict:
+    """Persist an image for a document and record a reference in its metadata. Returns the updated doc."""
+    ext = IMAGE_TYPES[content_type]
+    path = _images_dir() / f"{did}.{ext}"
+    # Remove any prior image in a different format so there is exactly one per document.
+    for old in _images_dir().glob(f"{did}.*"):
+        if old != path:
+            old.unlink()
+    path.write_bytes(data)
+    doc = one("SELECT metadata FROM documents WHERE id=?", (did,))
+    meta = json.loads(doc["metadata"]) if doc and doc["metadata"] else {}
+    meta["image"] = {"ext": ext, "content_type": content_type, "bytes": len(data)}
+    with connect() as con:
+        con.execute(
+            "UPDATE documents SET metadata=? WHERE id=?", (json.dumps(meta), did)
+        )
+    return one("SELECT * FROM documents WHERE id=?", (did,))
+
+
+def document_image_path(did: str):
+    """(path, content_type) for a document's image, or None. Reads the reference from metadata."""
+    doc = one("SELECT metadata FROM documents WHERE id=?", (did,))
+    if not doc:
+        return None
+    meta = json.loads(doc["metadata"]) if doc["metadata"] else {}
+    img = meta.get("image")
+    if not img:
+        return None
+    path = _images_dir() / f"{did}.{img['ext']}"
+    return (path, img["content_type"]) if path.exists() else None
+
+
+def delete_document_image(did: str) -> dict:
+    for old in _images_dir().glob(f"{did}.*"):
+        old.unlink()
+    doc = one("SELECT metadata FROM documents WHERE id=?", (did,))
+    meta = json.loads(doc["metadata"]) if doc and doc["metadata"] else {}
+    meta.pop("image", None)
+    with connect() as con:
+        con.execute(
+            "UPDATE documents SET metadata=? WHERE id=?", (json.dumps(meta), did)
+        )
+    return one("SELECT * FROM documents WHERE id=?", (did,))
+
+
 def create_conversation(pid: str, title: str):
     cid = new_id()
     with connect() as con:

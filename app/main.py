@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -152,6 +152,38 @@ def documents_by_tags(
     require_project(project_id)
     wanted = [t for t in tags.split(",") if t.strip()]
     return {"documents": store.documents_by_tags(project_id, wanted, match)}
+
+
+@app.put("/api/documents/{document_id}/image", status_code=201)
+async def upload_document_image(document_id: str, request: Request):
+    """Attach a reference image to a document. Body is the raw image bytes; type from Content-Type."""
+    require_document(document_id)
+    content_type = request.headers.get("content-type", "").split(";")[0].strip().lower()
+    if content_type not in store.IMAGE_TYPES:
+        raise HTTPException(
+            415, f"Unsupported image type. Allowed: {sorted(store.IMAGE_TYPES)}."
+        )
+    data = await request.body()
+    if not data:
+        raise HTTPException(400, "Empty image.")
+    if len(data) > store.MAX_IMAGE_BYTES:
+        raise HTTPException(413, "Image exceeds the 8 MB limit.")
+    return store.save_document_image(document_id, data, content_type)
+
+
+@app.get("/api/documents/{document_id}/image")
+def get_document_image(document_id: str):
+    found = store.document_image_path(document_id)
+    if not found:
+        raise HTTPException(404, "No image for this document.")
+    path, content_type = found
+    return FileResponse(path, media_type=content_type)
+
+
+@app.delete("/api/documents/{document_id}/image")
+def remove_document_image(document_id: str):
+    require_document(document_id)
+    return store.delete_document_image(document_id)
 
 
 @app.get("/api/projects/{project_id}/context")
